@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Árvore Casagranda — organograma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#E7E0CE;
+  --card:#F3EEE0;
+  --card-sombra:#D8CFB6;
+  --tinta:#2B3A5C;
+  --tinta-suave:#66739A;
+  --linha:#B7AE93;
+  --carimbo:#A03D2E;
+  --oliva:#4A6B47;
+  --geraco:0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.18), transparent 40%),
+    var(--papel);
+  color:var(--tinta);
+  font-family:'Courier Prime',monospace;
+  min-height:100vh;
+}
+
+/* ---------- barra de topo ---------- */
+.topo{
+  position:sticky;top:0;z-index:50;
+  background:var(--papel);
+  border-bottom:1px solid var(--card-sombra);
+  padding:14px 18px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.topo h1{
+  font-family:'Special Elite',cursive;
+  font-size:clamp(16px,3.5vw,22px);
+  font-weight:400;flex:1;min-width:180px;
+}
+.topo .acoes{display:flex;gap:8px;flex-wrap:wrap}
+.topo button{
+  font-family:'Courier Prime',monospace;font-size:13px;
+  background:var(--card);color:var(--tinta);
+  border:1px solid var(--tinta-suave);padding:8px 12px;cursor:pointer;
+}
+.topo button:hover{background:var(--card-sombra)}
+.topo button:focus-visible{outline:2px solid var(--carimbo);outline-offset:2px}
+.dica{font-size:12px;color:var(--tinta-suave);width:100%;margin-top:2px}
+
+/* ---------- área de scroll ---------- */
+.palco{
+  overflow:auto;
+  padding:36px 24px 80px;
+  min-height:calc(100vh - 60px);
+}
+.arvore{display:inline-flex;flex-direction:column;gap:6px;min-width:100%}
+
+/* ---------- nó ---------- */
+ul.galhos{list-style:none;padding-left:30px;position:relative}
+ul.galhos.raiz{padding-left:0}
+li.no{position:relative;padding:6px 0}
+
+/* linhas de conexão */
+ul.galhos:not(.raiz)>li.no::before{
+  content:"";position:absolute;left:-16px;top:0;bottom:0;
+  border-left:2px solid var(--linha);
+}
+ul.galhos:not(.raiz)>li.no:last-child::before{bottom:auto;height:28px}
+ul.galhos:not(.raiz)>li.no::after{
+  content:"";position:absolute;left:-16px;top:28px;width:14px;
+  border-top:2px solid var(--linha);
+}
+
+/* card da pessoa */
+.pcard{
+  display:inline-flex;align-items:center;gap:10px;
+  background:var(--card);
+  border:1px solid var(--card-sombra);
+  border-left:4px solid var(--cor,#66739A);
+  padding:9px 13px;cursor:default;
+  max-width:100%;
+  transition:transform .12s, box-shadow .12s;
+}
+.pcard.tem-filhos{cursor:pointer}
+.pcard.tem-filhos:hover{transform:translateX(2px);box-shadow:2px 2px 0 var(--card-sombra)}
+.pcard:focus-visible{outline:2px solid var(--carimbo);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.pcard{transition:none}}
+
+.toggle{
+  font-family:'Special Elite',cursive;font-size:15px;
+  width:20px;height:20px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--cor,#66739A);color:var(--cor,#66739A);
+  border-radius:3px;background:transparent;
+}
+.pcard.folha .toggle{border-style:dotted;opacity:.4}
+.pcard.aberto .toggle{background:var(--cor,#66739A);color:var(--card)}
+
+.pinfo{display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.pnome{font-weight:700;font-size:15px;white-space:nowrap}
+.pnome .mais{color:var(--carimbo);font-size:12px}
+.pmeta{font-size:12px;color:var(--tinta-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.pcont{
+  font-size:11px;color:var(--card);background:var(--cor,#66739A);
+  padding:1px 7px;border-radius:10px;white-space:nowrap;flex-shrink:0;
+}
+
+/* filhos escondidos por padrão */
+li.no>ul.galhos{display:none}
+li.no.expandido>ul.galhos{display:block}
+
+/* painel de detalhe */
+.detalhe{
+  position:fixed;right:0;top:0;bottom:0;width:min(340px,86vw);
+  background:var(--card);border-left:2px solid var(--tinta);
+  padding:24px 22px;z-index:100;overflow:auto;
+  transform:translateX(100%);transition:transform .22s;
+}
+.detalhe.aberto{transform:translateX(0)}
+@media (prefers-reduced-motion: reduce){.detalhe{transition:none}}
+.detalhe h2{font-family:'Special Elite',cursive;font-size:22px;font-weight:400;margin-bottom:4px;padding-right:30px}
+.detalhe .fechar{position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--tinta)}
+.detalhe dl{margin-top:18px}
+.detalhe dt{font-size:12px;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:1px;margin-top:14px}
+.detalhe dd{font-size:15px;margin-top:2px}
+.detalhe .geracao-tag{display:inline-block;font-size:12px;background:var(--tinta);color:var(--card);padding:3px 10px;margin-top:8px}
+.overlay{position:fixed;inset:0;background:rgba(43,58,92,.25);z-index:99;display:none}
+.overlay.aberto{display:block}
+
+/* legenda de cores */
+.legenda-cor{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--tinta-suave);width:100%;margin-top:6px}
+.legenda-cor span{display:inline-flex;align-items:center;gap:5px}
+.legenda-cor i{width:12px;height:12px;display:inline-block;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <h1>Família Casagranda</h1>
+  <div class="acoes">
+    <button id="bTronco">Só o tronco</button>
+    <button id="bTudo">Abrir tudo</button>
+    <button id="bFechar">Recolher</button>
+  </div>
+  <p class="dica">Toque num quadro com <b>+</b> para abrir os filhos. Toque no nome para ver os detalhes.</p>
+  <div class="legenda-cor">
+    <span><i style="background:#66739A"></i>tronco / geração antiga</span>
+    <span><i style="background:#4A6B47"></i>vivos em 1997</span>
+    <span><i style="background:#A03D2E"></i>falecidos até 1997 (+)</span>
+  </div>
+</div>
+
+<div class="palco">
+  <div class="arvore"><ul class="galhos raiz" id="raiz"></ul></div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="detalhe" id="detalhe" aria-live="polite">
+  <button class="fechar" id="bFecharDet" aria-label="Fechar detalhes">×</button>
+  <div id="detConteudo"></div>
+</aside>
+
+<script>
+/* ===== dados (mesma base recursiva) ===== */
+const RAIZ = {
+ n:"Benjamim & Tereza", d:"1880 · 1882", cj:"Casal fundador", obs:"Ambos de origem italiana — Treviso. Casaram e tiveram 14 filhos.", tronco:true,
+ f:[
+ {n:"Claurinda", m:1, cj:"Antonio Capelari (+)", obs:"não teve filhos"},
+ {n:"Italina Dalila", d:"15/01/05", cj:"Antonio Contini (+)", tronco:1, f:[
+   {n:"Ordalia", d:"24/05/26", cj:"Elias Alexandre Salva (+)"},
+   {n:"Gentil Aurélio", d:"01/02/28", cj:"Josefina Capra"},
+   {n:"Fiorindo", d:"04/04/30", cj:"Gema"},
+   {n:"Severina", d:"13/08/33", cj:"Oswaldo Gehlen", obs:"não tiveram filhos"},
+   {n:"Aurora", d:"15/09/31", obs:"freira"},
+   {n:"Elvira", d:"05/07/35", cj:"Erminio Sincero Toldo"},
+   {n:"Nelson", d:"27/07/37", cj:"Neide Baldissera"},
+   {n:"Nadir", d:"21/08/39", obs:"irmã religiosa — Caxias do Sul, RS"},
+   {n:"Leonel", d:"24/03/41", cj:"Helena Tambini"},
+   {n:"Olinda Rosa", d:"23/08/43", obs:"irmã religiosa — RS"},
+   {n:"Adelia", d:"21/02/45", obs:"irmã religiosa — México"},
+   {n:"Genuir", d:"27/08/49", cj:"Laiz Sandri"}
+ ]},
+ {n:"Américo", m:1, obs:"faleceu aos 26 anos"},
+ {n:"Otília", m:1, cj:"Domingos Favero (+)", tronco:1, f:[
+   {n:"Severina Aurora", d:"17/06/31", obs:"freira"},
+   {n:"Deomir", d:"27/02/33", cj:"Claudina Fascina", f:[
+     {n:"Olir Pedro", d:"18/11/54", cj:"Suely Dalagnol", f:[
+       {n:"Barbara", d:"01/01/84"},{n:"Sanderson", d:"30/07/90"},{n:"Brandali", d:"25/03/94"}]},
+     {n:"Neiva", d:"28/12/57", cj:"Dorival Seilbak", f:[{n:"Jeferson Luiz", d:"17/05/87"}]},
+     {n:"Irineu", d:"03/04/59", cj:"Ines Jandira Bezem", f:[
+       {n:"Suzana", d:"29/01/79"},{n:"Rafael", d:"17/09/85"}]},
+     {n:"Ivanir (Ivo)", d:"14/04/61", cj:"Ines Flech", f:[
+       {n:"Tiago", d:"14/05/84"},{n:"Gersica", d:"08/01/90"}]},
+     {n:"Justina Ines", d:"05/05/65", cj:"Marino Buzarello", f:[
+       {n:"Crislaine", d:"21/11/89"},{n:"Daniel", d:"06/02/95"}]},
+     {n:"Lovir", d:"15/06/71", cj:"Eliane A. Aterman", f:[{n:"Andrieli", d:"15/07/94"}]}
+   ]}
+ ]},
+ {n:"Hugo Avelino", d:"04/05/1910", m:1, cj:"Libera Testa", tronco:1, obs:"30 descendentes em 1997", f:[
+   {n:"Claudino", d:"04/05/34", cj:"Ines Messiagia"},
+   {n:"Gelsi", d:"16/02/36", cj:"Sueli A. Toldo", obs:"AUTOR do documento — Xanxerê, SC"},
+   {n:"Aldoino", d:"09/10/39", cj:"Remilde Baratto"},
+   {n:"Eidelia", d:"27/05/46", cj:"Emilio Milan (+)"},
+   {n:"Valdir", d:"20/02/52", cj:"Terezinha Baratto"}
+ ]},
+ {n:"Amélia Nair", d:"07/10/11", m:1, cj:"Pedro José Contini (+)", tronco:1, obs:"96 descendentes em 1997", f:[
+   {n:"Elide Gema", d:"20/10/34", cj:"Genuino Luiz Lanzarini"},
+   {n:"Francisco Belmiro", d:"06/04/36", cj:"Rosalina Menegatti"},
+   {n:"Deonilde", d:"13/10/38"},
+   {n:"Lirio", d:"28/02/41"},
+   {n:"Ermida", d:"29/04/43", obs:"irmã religiosa"},
+   {n:"Angelina", d:"06/01/47", cj:"Denilcio Moresco"},
+   {n:"Olvide", d:"25/07/48", cj:"Lourdes Baldissera"},
+   {n:"Geny", d:"31/01/51", cj:"Belmiro Secco"},
+   {n:"Gabriel Valdir", d:"06/10/52", cj:"Adiles Vian"},
+   {n:"Sergio Luiz", d:"25/02/55", cj:"Diva Dupont"}
+ ]},
+ {n:"Deonesta", d:"04/06/13", m:1, cj:"Luiz Filippi", tronco:1, obs:"33 descendentes em 1997", f:[
+   {n:"Deonilva", d:"23/05/33"},
+   {n:"Domingos", d:"13/01/35", cj:"Terezinha Siqueira"},
+   {n:"Suely Terezinha", d:"14/02/37", cj:"Honorio D. Gasparina (+)"},
+   {n:"Dilar Angelo", d:"08/09/40", cj:"Cleci Maria de Carlli"},
+   {n:"Maria Ines", m:1, obs:"faleceu aos 5 anos"},
+   {n:"Dario José", d:"09/12/48", cj:"Arlete Karvat"},
+   {n:"Dermio Antonio", d:"03/01/51", cj:"Anezilda Marques"},
+   {n:"Dorval Pedro", d:"01/05/54", cj:"Janeci Rocha"},
+   {n:"Dilene Maria", d:"22/09/58", cj:"Moacir Sberse"}
+ ]},
+ {n:"Severina Englantina", d:"10/11/15", obs:"Irmã Ermelinda — religiosa"},
+ {n:"Irma", d:"13/09/16", cj:"Domingos Lodi (+)", tronco:1, obs:"50 descendentes em 1997", f:[
+   {n:"Aldoir", d:"01/04/38", cj:"Maria Olivia E. Borba"},
+   {n:"Inelde", d:"09/10/40", cj:"Daniel Antonio Borba"},
+   {n:"Aldoino", d:"12/05/42", cj:"Valdevina Rossatto"},
+   {n:"Adelia", d:"30/01/44", cj:"Genir Pereira"},
+   {n:"Ilda", d:"08/11/45", cj:"Hilario Spricigo"},
+   {n:"Lorita", d:"03/12/49", cj:"Helio Marcos"},
+   {n:"Elide", d:"17/08/52", cj:"Osvaldo Borella"},
+   {n:"Clari", d:"03/05/55", cj:"Carlos Brites"},
+   {n:"Leda", d:"12/08/58", cj:"Ercilio O. da Silva"}
+ ]},
+ {n:"Sibila Diva", d:"18/04/21", cj:"Claudino M. Marchetti (+)", tronco:1, obs:"31 descendentes em 1997", f:[
+   {n:"Ventilino", d:"20/04/40", cj:"Neiva Piovesana", obs:"aniversário citado pelo Gelsi no documento"},
+   {n:"Aide Carmem", d:"25/08/41", cj:"Evaldo Bet"},
+   {n:"Adiles Terezinha", d:"28/09/42", m:1, cj:"Hudo Andre Pianezolla"},
+   {n:"Adelino", m:1, obs:"faleceu aos 3 anos"},
+   {n:"Aida Luiza", d:"21/06/51", cj:"Antonio Quino Dazzi"},
+   {n:"Alice Terezinha", d:"29/06/54", cj:"Alcides Pianezolla"},
+   {n:"Aliete Terezinha", d:"11/11/56", cj:"Alirio Guelen"},
+   {n:"Ermelide Maria", d:"11/11/56", cj:"Wilson Conalli"},
+   {n:"Renita", d:"25/07/59", cj:"José Zilio Niero"}
+ ]},
+ {n:"Cezarino", d:"18/06/18", m:1, cj:"Regina Rossi (+)", tronco:1, obs:"24 descendentes em 1997", f:[
+   {n:"Iracil", d:"27/01/41", cj:"Ione Bassanelo", obs:"Rio Verde de Mato Grosso — MS"},
+   {n:"Celi", d:"21/02/42", cj:"Antoninha Merlin"},
+   {n:"Odila", d:"02/07/44", cj:"Marcelino Luiz Cozer"},
+   {n:"Margarida", d:"11/10/45", cj:"Arnildo Messalira"},
+   {n:"Ivaldino", d:"12/02/47", cj:"Clacir Salvini"},
+   {n:"Adelia", d:"30/04/50", cj:"João Dal'Aqua"},
+   {n:"Marlene", d:"25/07/55", cj:"Antonio de Oliveira"},
+   {n:"Benjamim", d:"08/10/57", cj:"Ana Jacomini"}
+ ]},
+ {n:"Nilo Deonísio", d:"06/01/23", cj:"Maria Rosa Rossi", tronco:1, f:[
+   {n:"Ledio", d:"18/01/48", m:1},
+   {n:"Flavio", d:"08/01/51", m:1, cj:"Noeli", f:[
+     {n:"Joseane", d:"20/09/78"},{n:"Marcos", d:"07/05/86"}]},
+   {n:"Sergio", d:"22/08/52", cj:"Maria Helena Baggio", f:[
+     {n:"Fernando Roberto", d:"22/07/83"},{n:"Mariana", d:"18/08/87"}]},
+   {n:"Neusa", d:"03/07/54", cj:"Luiz Bianchi", f:[
+     {n:"Robinson", d:"01/08/75"},{n:"Patricia", d:"07/12/78"},{n:"Ronaldo", d:"19/08/83"}]},
+   {n:"Neusa Terezinha", d:"02/10/59", cj:"Leonir Daniel", f:[
+     {n:"Everton", d:"22/08/83"},{n:"Renato", d:"22/05/89"}]},
+   {n:"Valdo Carlos", d:"21/04/61", obs:"continuação na pág. 20 (faltante)"}
+ ]},
+ {n:"Remígio", d:"28/08/24", tronco:1, obs:"filhos A–F na pág. 20 faltante", f:[
+   {n:"Nerita", d:"13/11/62", cj:"João Carlos Davilla Soares"},
+   {n:"Liane", d:"03/10/64", cj:"Airton Boenevides da Silva", f:[{n:"Gabriela", d:"22/03/90"}]},
+   {n:"Ariosto", d:"18/09/67", cj:"Katia Mulinaro", f:[{n:"Genifer", d:"22/04/96"}]}
+ ]},
+ {n:"Irio", m:1, obs:"faleceu aos 15 meses"}
+]};
+
+const GERACOES = ["Casal fundador","Filho(a)","Neto(a)","Bisneto(a)","Tataraneto(a)","5ª geração"];
+const cor = p => p.m ? "#A03D2E" : (p.tronco ? "#66739A" : "#4A6B47");
+const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const contar = l => l ? l.reduce((t,p)=>t+1+contar(p.f),0) : 0;
+
+let seq = 0;
+const REG = {};
+
+function montarNo(p, ger){
+  const id = "n"+(seq++);
+  REG[id] = {p, ger};
+  const temF = p.f && p.f.length;
+  const total = contar(p.f);
+  const li = document.createElement("li");
+  li.className = "no";
+  li.dataset.id = id;
+
+  const card = document.createElement("div");
+  card.className = "pcard" + (temF?" tem-filhos":" folha");
+  card.style.setProperty("--cor", cor(p));
+  card.tabIndex = 0;
+  card.innerHTML =
+    `<span class="toggle">${temF?"+":"·"}</span>
+     <span class="pinfo">
+       <span class="pnome">${esc(p.n)}${p.m?' <span class="mais">(+)</span>':''}</span>
+       ${p.d||p.cj?`<span class="pmeta">${esc([p.d, p.cj?("C/ "+p.cj):""].filter(Boolean).join(" · "))}</span>`:""}
+     </span>
+     ${temF?`<span class="pcont">${total}</span>`:""}`;
+  li.appendChild(card);
+
+  if(temF){
+    const ul = document.createElement("ul");
+    ul.className = "galhos";
+    p.f.forEach(c => ul.appendChild(montarNo(c, ger+1)));
+    li.appendChild(ul);
+    card.addEventListener("click", e=>{
+      if(e.detail===0) return;
+      li.classList.toggle("expandido");
+      card.classList.toggle("aberto");
+      card.querySelector(".toggle").textContent = li.classList.contains("expandido")?"–":"+";
+    });
+  }
+  card.addEventListener("keydown", e=>{
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); card.click(); }
+  });
+  card.addEventListener("dblclick", ()=>abrirDetalhe(id));
+  // clique no nome abre detalhe sem alternar
+  card.querySelector(".pnome").addEventListener("click", e=>{ e.stopPropagation(); abrirDetalhe(id); });
+  return li;
+}
+
+const raiz = document.getElementById("raiz");
+raiz.appendChild(montarNo(RAIZ, 0));
+// abre o tronco (casal + 14 filhos) por padrão
+raiz.querySelector("li.no").classList.add("expandido");
+raiz.querySelector(".pcard").classList.add("aberto");
+raiz.querySelector(".toggle").textContent = "–";
+
+/* ---- painel de detalhe ---- */
+const detalhe = document.getElementById("detalhe");
+const overlay = document.getElementById("overlay");
+const detConteudo = document.getElementById("detConteudo");
+function abrirDetalhe(id){
+  const {p,ger} = REG[id];
+  const total = contar(p.f);
+  detConteudo.innerHTML =
+    `<h2>${esc(p.n)}${p.m?' <span style="color:var(--carimbo);font-size:15px">(+)</span>':''}</h2>
+     <span class="geracao-tag">${GERACOES[Math.min(ger,5)]}</span>
+     <dl>
+       ${p.d?`<dt>Nascimento</dt><dd>${esc(p.d)}</dd>`:""}
+       ${p.cj?`<dt>Casamento</dt><dd>${esc(p.cj)}</dd>`:""}
+       ${total?`<dt>Descendentes transcritos</dt><dd>${total}</dd>`:""}
+       ${p.obs?`<dt>Observação</dt><dd>${esc(p.obs)}</dd>`:""}
+       ${p.m?`<dt>Situação</dt><dd style="color:var(--carimbo)">Falecido(a) até 1997</dd>`:(ger>0?`<dt>Situação</dt><dd style="color:var(--oliva)">Vivo(a) em 1997</dd>`:"")}
+     </dl>`;
+  detalhe.classList.add("aberto"); overlay.classList.add("aberto");
+}
+function fecharDetalhe(){ detalhe.classList.remove("aberto"); overlay.classList.remove("aberto"); }
+document.getElementById("bFecharDet").onclick = fecharDetalhe;
+overlay.onclick = fecharDetalhe;
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") fecharDetalhe(); });
+
+/* ---- botões globais ---- */
+function setTodos(expandir){
+  document.querySelectorAll("li.no").forEach(li=>{
+    const card = li.querySelector(":scope > .pcard");
+    if(!card.classList.contains("tem-filhos")) return;
+    li.classList.toggle("expandido", expandir);
+    card.classList.toggle("aberto", expandir);
+    card.querySelector(".toggle").textContent = expandir?"–":"+";
+  });
+}
+document.getElementById("bTudo").onclick = ()=>setTodos(true);
+document.getElementById("bFechar").onclick = ()=>{
+  setTodos(false);
+  const r = raiz.querySelector("li.no");
+  r.classList.add("expandido");
+  r.querySelector(".pcard").classList.add("aberto");
+  r.querySelector(".toggle").textContent="–";
+};
+document.getElementById("bTronco").onclick = ()=>{
+  setTodos(false);
+  const r = raiz.querySelector("li.no");
+  r.classList.add("expandido");
+  r.querySelector(".pcard").classList.add("aberto");
+  r.querySelector(".toggle").textContent="–";
+};
+</script>
+</body>
+</html>
